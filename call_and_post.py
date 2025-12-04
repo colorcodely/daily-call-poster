@@ -4,7 +4,7 @@ import requests
 from twilio.rest import Client
 import os.path
 
-# --- Load environment variables ---
+# Load environment variables
 TWILIO_SID = os.environ["TWILIO_SID"]
 TWILIO_AUTH = os.environ["TWILIO_AUTH"]
 TWILIO_FROM = os.environ["TWILIO_FROM"]
@@ -31,7 +31,7 @@ def place_call_and_get_recording():
     )
 
     call_sid = call.sid
-    print("Call SID:", call_sid)
+    print(f"Call SID: {call_sid}")
 
     # Wait for call to finish + recording to generate
     print("Waiting for recording...")
@@ -47,10 +47,14 @@ def place_call_and_get_recording():
     if not recording:
         raise RuntimeError("No recording produced by Twilio.")
 
-    print("Recording found:", recording.sid)
+    print(f"Recording found: {recording.sid}")
 
     # Download audio file
-    recording_url = f"https://api.twilio.com/2012010-04-01/Accounts/{TWILIO_SID}/Recordings/{recording.sid}.mp3"
+    recording_url = (
+        f"https://api.twilio.com/2010-04-01/Accounts/"
+        f"{TWILIO_SID}/Recordings/{recording.sid}.mp3"
+    )
+
     audio = requests.get(recording_url, auth=(TWILIO_SID, TWILIO_AUTH)).content
 
     with open("call.mp3", "wb") as f:
@@ -83,9 +87,25 @@ def transcribe_audio(path):
             timeout=120,
         )
 
-    # Raise exception for debugging if it fails
     response.raise_for_status()
 
     result = response.json()
     text = result.get("text", "")
-    print("Transcripti
+    print("Transcription complete.")
+    return text
+
+
+def post_to_facebook(message):
+    print("Posting to Facebook...")
+
+    url = f"https://graph.facebook.com/{FB_PAGE_ID}/feed"
+    data = {
+        "message": message,
+        "access_token": FB_PAGE_ACCESS_TOKEN
+    }
+
+    r = requests.post(url, data=data)
+
+    if r.status_code != 200:
+        print(f"Facebook error: {r.text}")
+        ra
