@@ -2,8 +2,9 @@ import os
 import time
 import requests
 from twilio.rest import Client
-from openai import OpenAI
+import os.path
 
+# --- Load environment variables ---
 TWILIO_SID = os.environ["TWILIO_SID"]
 TWILIO_AUTH = os.environ["TWILIO_AUTH"]
 TWILIO_FROM = os.environ["TWILIO_FROM"]
@@ -13,16 +14,16 @@ TWILIO_TWIML_URL = os.environ["TWILIO_TWIML_URL"]
 FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
 FB_PAGE_ID = os.environ["FB_PAGE_ID"]
 
-client = Client(TWILIO_SID, TWILIO_AUTH)
-from openai import OpenAI
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
+# Twilio client
+twilio_client = Client(TWILIO_SID, TWILIO_AUTH)
 
 
 def place_call_and_get_recording():
     print("Placing outbound call...")
 
-    call = client.calls.create(
+    call = twilio_client.calls.create(
         to=TWILIO_TO,
         from_=TWILIO_FROM,
         url=TWILIO_TWIML_URL,
@@ -37,7 +38,7 @@ def place_call_and_get_recording():
     recording = None
 
     for _ in range(30):  # 30 retries × 10 sec = 5 minutes max
-        recs = client.recordings.list(call_sid=call_sid)
+        recs = twilio_client.recordings.list(call_sid=call_sid)
         if recs:
             recording = recs[0]
             break
@@ -61,12 +62,32 @@ def place_call_and_get_recording():
 
 def transcribe_audio(path):
     print("Transcribing audio...")
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+    }
+
     with open(path, "rb") as f:
-        transcript = client.audio.transcriptions.create(
-            model="gpt-4o-transcribe",
-            file=f
+        files = {
+            "file": (os.path.basename(path), f, "audio/mpeg"),
+        }
+        data = {
+            "model": "gpt-4o-transcribe",
+        }
+
+        response = requests.post(
+            "https://api.openai.com/v1/audio/transcriptions",
+            headers=headers,
+            data=data,
+            files=files,
+            timeout=120,
         )
-    text = transcript.text
+
+    # Raise exception for debugging if it fails
+    response.raise_for_status()
+
+    result = response.json()
+    text = result.get("text", "")
     print("Transcription complete.")
     return text
 
