@@ -14,7 +14,9 @@ FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
 FB_PAGE_ID = os.environ["FB_PAGE_ID"]
 
 client = Client(TWILIO_SID, TWILIO_AUTH)
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+from openai import OpenAI
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
 
 
 def place_call_and_get_recording():
@@ -60,7 +62,7 @@ def place_call_and_get_recording():
 def transcribe_audio(path):
     print("Transcribing audio...")
     with open(path, "rb") as f:
-        transcript = openai_client.audio.transcriptions.create(
+        transcript = client.audio.transcriptions.create(
             model="gpt-4o-transcribe",
             file=f
         )
