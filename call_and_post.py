@@ -50,7 +50,7 @@ def place_call_and_get_recording():
     print("Recording found:", recording.sid)
 
     # Download audio file
-    recording_url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Recordings/{recording.sid}.mp3"
+    recording_url = f"https://api.twilio.com/2012010-04-01/Accounts/{TWILIO_SID}/Recordings/{recording.sid}.mp3"
     audio = requests.get(recording_url, auth=(TWILIO_SID, TWILIO_AUTH)).content
 
     with open("call.mp3", "wb") as f:
@@ -72,7 +72,7 @@ def transcribe_audio(path):
             "file": (os.path.basename(path), f, "audio/mpeg"),
         }
         data = {
-            "model": "gpt-4o-transcribe",
+            "model": "whisper-1",
         }
 
         response = requests.post(
@@ -88,30 +88,4 @@ def transcribe_audio(path):
 
     result = response.json()
     text = result.get("text", "")
-    print("Transcription complete.")
-    return text
-
-
-def post_to_facebook(message):
-    print("Posting to Facebook...")
-
-    url = f"https://graph.facebook.com/{FB_PAGE_ID}/feed"
-    data = {
-        "message": message,
-        "access_token": FB_PAGE_ACCESS_TOKEN
-    }
-
-    r = requests.post(url, data=data)
-
-    if r.status_code != 200:
-        print("Facebook error:", r.text)
-        raise RuntimeError("Failed posting to Facebook.")
-
-    print("Posted successfully.")
-    return True
-
-
-if __name__ == "__main__":
-    audio_file = place_call_and_get_recording()
-    text = transcribe_audio(audio_file)
-    post_to_facebook(text)
+    print("Transcripti
